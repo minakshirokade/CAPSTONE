@@ -1,0 +1,17 @@
+# Simulated dataset loading (replace with real ECG dataset)
+# Assuming: df with columns [‘signal’, ‘user_id’]
+def simulate_ecg_dataset(n_users=5, n_samples=1000, length=1000):
+    np.random.seed(42)
+    data = []
+    for user in range(n_users):
+        for _ in range(n_samples):
+            # Simulated ECG signal
+            signal = np.sin(np.linspace(0, 6*np.pi, length)) + 0.1 * np.random.randn(length)
+            signal = bandpass_filter(signal)
+            features = extract_features(signal)
+            data.append((features, user))
+    return pd.DataFrame(data, columns=["features", "user_id"])
+
+df = simulate_ecg_dataset()
+X = np.stack(df["features"].values)
+y = df["user_id"].values

@@ -1,0 +1,67 @@
+# 1. IMPORT LIBRARIES
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.signal import butter, lfilter, welch
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, accuracy_score
+
+
+# 2. SIGNAL PROCESSING
+# Bandpass Filter Design for ECG (0.5 - 45 Hz typical ECG range)
+def butter_bandpass(lowcut, highcut, fs, order=4):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    return butter(order, [low, high], btype='band')
+
+# Apply the Bandpass Filter
+def bandpass_filter(data, lowcut=0.5, highcut=45.0, fs=250.0, order=4):
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    return lfilter(b, a, data)
+
+# Feature Extraction using Welch Power Spectral Density (PSD)
+def extract_features(signal, fs=250.0):
+    f, psd = welch(signal, fs)
+    return np.log(psd[:40])  # Use first 40 frequencies as features
+
+
+# 3. DATA PREPARATION
+# Simulated dataset loading (replace with real ECG dataset)
+# Assuming: df with columns [‘signal’, ‘user_id’]
+def simulate_ecg_dataset(n_users=5, n_samples=1000, length=1000):
+    np.random.seed(42)
+    data = []
+    for user in range(n_users):
+        for _ in range(n_samples):
+            # Simulated ECG signal
+            signal = np.sin(np.linspace(0, 6*np.pi, length)) + 0.1 * np.random.randn(length)
+            signal = bandpass_filter(signal)
+            features = extract_features(signal)
+            data.append((features, user))
+    return pd.DataFrame(data, columns=["features", "user_id"])
+
+df = simulate_ecg_dataset()
+X = np.stack(df["features"].values)
+y = df["user_id"].values
+
+
+# 4. TRAINING MACHINE LEARNING MODEL
+# Data split and scaling
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Train Support Vector Machine
+svm = SVC(kernel='rbf', C=1, gamma='scale')
+svm.fit(X_train_scaled, y_train)
+
+
+# 5. EVALUATION
+# Evaluate the model
+y_pred = svm.predict(X_test_scaled)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))

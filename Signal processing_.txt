@@ -1,0 +1,16 @@
+# Bandpass Filter Design for ECG (0.5 - 45 Hz typical ECG range)
+def butter_bandpass(lowcut, highcut, fs, order=4):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    return butter(order, [low, high], btype='band')
+
+# Apply the Bandpass Filter
+def bandpass_filter(data, lowcut=0.5, highcut=45.0, fs=250.0, order=4):
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    return lfilter(b, a, data)
+
+# Feature Extraction using Welch Power Spectral Density (PSD)
+def extract_features(signal, fs=250.0):
+    f, psd = welch(signal, fs)
+    return np.log(psd[:40])  # Use first 40 frequencies as features
